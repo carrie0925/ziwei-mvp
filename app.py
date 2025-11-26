@@ -12,20 +12,17 @@ load_dotenv()
 # --- 1. 設定頁面 ---
 st.set_page_config(page_title="九天玄女指定姐妹 - 紫微語音室", layout="centered", page_icon="🔮")
 
-# ⚠️ CSS 設定：App維持暗黑，唯獨日曆改成白底黑字
+# ⚠️ CSS 終極修復：維持之前的完美暗黑主題
 st.markdown("""
 <style>
-    /* ================= 1. 全域深色背景 ================= */
+    /* ================= 全域設定 ================= */
     .stApp {
         background: linear-gradient(180deg, #1a0b2e 0%, #2d1b4e 100%);
     }
-    
-    /* 一般文字：米白色 */
     h1, h2, h3, h4, h5, h6, p, span, div, label {
         font-family: 'Noto Serif TC', 'Songti TC', serif !important;
         color: #f0e6d2 !important;
     }
-    
     h1 {
         color: #ffd700 !important;
         text-shadow: 0px 0px 15px rgba(255, 215, 0, 0.6);
@@ -33,62 +30,47 @@ st.markdown("""
         font-weight: 800 !important;
     }
 
-    /* ================= 2. 輸入框 (暗黑風) ================= */
+    /* ================= 輸入框優化 ================= */
     .stTextInput label, .stSelectbox label, .stDateInput label, .stTimeInput label {
         color: #ffd700 !important;
         font-size: 1.1rem !important;
         font-weight: bold !important;
     }
-    
-    /* 輸入框本體維持深色，這樣才不會在頁面上突兀 */
     .stTextInput input, .stDateInput input, .stTimeInput input {
         background-color: rgba(0, 0, 0, 0.5) !important;
         color: #ffffff !important;
         border: 1px solid #d4af37 !important;
     }
 
-    /* ================= 3. 日曆彈出視窗 (白底黑字版) ================= */
-    
-    /* 彈出視窗容器：白底 */
+    /* ================= 日曆 (Calendar) 萬用字元修復 ================= */
     div[data-baseweb="popover"], div[data-baseweb="calendar"] {
-        background-color: #ffffff !important;
+        background-color: #1a0b2e !important;
         border: 1px solid #d4af37 !important;
     }
-
-    /* 強制日曆內的所有文字變黑色 (因為全域設成了米白，這裡要蓋回來) */
     div[data-baseweb="calendar"] * {
-        color: #000000 !important;
+        background-color: #1a0b2e !important; 
+        color: #f0e6d2 !important;
     }
-
-    /* 日期按鈕：白底黑字 */
-    div[data-baseweb="calendar"] button {
-        background-color: #ffffff !important;
-    }
-
-    /* 滑鼠移過 (Hover)：淺灰色 */
     div[data-baseweb="calendar"] button:hover {
-        background-color: #f0f0f0 !important;
+        background-color: #4a148c !important;
         border-radius: 50%;
     }
-
-    /* 【選中狀態】紅底白字 (農民曆風格) */
-    div[data-baseweb="calendar"] button[aria-selected="true"] {
-        background-color: #b71c1c !important; /* 深紅 */
+    div[data-baseweb="calendar"] button:hover div {
+        background-color: #4a148c !important;
     }
-    
-    /* 選中狀態內部的文字變白 */
-    div[data-baseweb="calendar"] button[aria-selected="true"] * {
+    div[data-baseweb="calendar"] button[aria-selected="true"] {
+        background-color: #b71c1c !important;
+    }
+    div[data-baseweb="calendar"] button[aria-selected="true"] div {
+        background-color: #b71c1c !important;
         color: #ffffff !important;
     }
-    
-    /* 左右箭頭 Icon：改回深色，不然白底配金字會看不到 */
     div[data-baseweb="calendar"] svg {
-        fill: #333333 !important;
+        fill: #ffd700 !important;
+        background-color: transparent !important;
     }
-
-    /* ================= 4. 其他元件 ================= */
     
-    /* 下拉選單 (保持深色風格，因為它比較好控) */
+    /* ================= 其他元件 ================= */
     div[data-baseweb="select"] > div {
         background-color: rgba(0, 0, 0, 0.5) !important;
         border: 1px solid #d4af37 !important;
@@ -106,7 +88,6 @@ st.markdown("""
         color: #ffffff !important;
     }
 
-    /* 按鈕：紫色漸層 */
     .stButton button {
         background: linear-gradient(to bottom, #7b1fa2, #4a148c) !important;
         color: #ffd700 !important;
@@ -121,7 +102,6 @@ st.markdown("""
     }
     div[data-testid="stForm"] button p { color: #ffd700 !important; }
 
-    /* 側邊欄 */
     section[data-testid="stSidebar"] {
         background-color: #1a0b2e !important;
         border-right: 1px solid #d4af37;
@@ -137,18 +117,23 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- 2. API Key 與大腦初始化 ---
+# --- 2. API Key 與大腦初始化 (純 .env 模式) ---
 openai_key = os.getenv("OPENAI_API_KEY")
 eleven_key = os.getenv("ELEVENLABS_API_KEY")
 
 with st.sidebar:
     st.header("⚙️ 靈力設定")
-    if not openai_key:
-        openai_key = st.text_input("OpenAI API Key", type="password")
-    if eleven_key:
-        st.success("✅ 廖麗芳語音連線中")
+    
+    # 這裡改成純顯示狀態，不再提供輸入框
+    if openai_key and eleven_key:
+        st.success("✅ 系統靈力充沛 (已連線)")
     else:
-        st.error("⚠️ 語音未連線 (.env)")
+        st.error("❌ 靈力不足！")
+        if not openai_key:
+            st.warning("⚠️ 缺 OpenAI Key\n請檢查 .env 檔案")
+        if not eleven_key:
+            st.warning("⚠️ 缺 語音 Key\n請檢查 .env 檔案")
+
     st.markdown("---")
     st.info("⚠️ **期末作業聲明**：\n語音採樣自網紅「阿翰po影片」角色廖麗芳，僅供學術展示。")
 
@@ -227,8 +212,10 @@ def page_theme_selection():
 
 def page_chat_room():
     st.markdown("<h1>🎙️ 廖麗芳紫微語音室</h1>", unsafe_allow_html=True)
+    
+    # 檢查 API Key 是否存在，若不存在顯示錯誤並停止
     if not engine:
-        st.error("⚠️ 請先設定 OpenAI API Key！")
+        st.error("⚠️ 系統偵測不到 API Key！請確認您的 .env 檔案是否設定正確。")
         return
 
     for msg in st.session_state.chat_history:
