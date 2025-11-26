@@ -1,0 +1,8 @@
+streamlit
+edge-tts
+lunar_python
+asyncio
+SpeechRecognition
+openai
+elevenlabs
+watchdog
