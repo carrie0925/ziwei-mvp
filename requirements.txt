@@ -6,3 +6,4 @@ SpeechRecognition
 openai
 elevenlabs
 watchdog
+grop
