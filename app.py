@@ -3,9 +3,9 @@ import datetime
 import speech_recognition as sr
 import os
 from dotenv import load_dotenv
-from logic import ZiweiBrain
+from logic import ZiweiBrain, render_ziwei_chart_grid
 from tts import get_audio_filepath
-
+from ziweicore import calculate_ziwei_chart
 # 0. 載入環境變數
 load_dotenv()
 
@@ -19,7 +19,7 @@ st.markdown("""
     .stApp {
         background: linear-gradient(180deg, #1a0b2e 0%, #2d1b4e 100%);
     }
-    h1, h2, h3, h4, h5, h6, p, span, div, label {
+    h1, h2, h3, h4, h5, h6, p, label {
         font-family: 'Noto Serif TC', 'Songti TC', serif !important;
         color: #f0e6d2 !important;
     }
@@ -188,8 +188,33 @@ def page_user_input():
                         "datetime": datetime.datetime.combine(date, time_val),
                         "gender": gender
                     }
-                    st.session_state.step = 2
+                    st.session_state.step = 4
                     st.rerun()
+
+def page_chart_display():
+    st.markdown("## 🔮 您的紫微命盤")
+
+    if "ziwei_chart" not in st.session_state:
+        st.session_state.ziwei_chart = calculate_ziwei_chart(
+            st.session_state.user_data["datetime"],
+            st.session_state.user_data["gender"]
+        )
+
+    # 🟣 九宮格 UI
+    render_ziwei_chart_grid(st.session_state.ziwei_chart)
+
+    st.markdown("---")
+    st.markdown("### 想聽阿姨解命嗎？")
+
+        # 上一頁（回到 step 1）
+    if st.button("⬅️ 返回輸入頁"):
+        st.session_state.step = 1
+        st.rerun()
+
+    if st.button("👉 看夠了，帶我去算命！", use_container_width=True):
+        st.session_state.step = 2
+        st.rerun()
+
 
 def page_theme_selection():
     st.markdown("<h1>🔮 您想求什麼？</h1>", unsafe_allow_html=True)
@@ -209,6 +234,10 @@ def page_theme_selection():
                 st.session_state.last_audio = audio_path
             st.session_state.step = 3
             st.rerun()
+        # 上一頁（回到 step 1）
+    if st.button("⬅️ 返回命盤"):
+        st.session_state.step = 4
+        st.rerun()
 
 def page_chat_room():
     st.markdown("<h1>🎙️ 廖麗芳紫微語音室</h1>", unsafe_allow_html=True)
@@ -251,9 +280,15 @@ def page_chat_room():
             else:
                 st.warning("阿姨聽不清楚捏，你大聲一點～")
 
+    if st.button("⬅️ 返回主題頁"):
+        st.session_state.step = 2
+        st.rerun()
+
 def main():
     if st.session_state.step == 1:
         page_user_input()
+    elif st.session_state.step == 4:
+        page_chart_display()
     elif st.session_state.step == 2:
         page_theme_selection()
     elif st.session_state.step == 3:
