@@ -12,15 +12,13 @@ import base64
 import uuid
 from streamlit.components.v1 import html
 
-
-
 # 0. 載入環境變數
 load_dotenv()
 
 # --- 1. 設定頁面 ---
 st.set_page_config(page_title="九天玄女指定姐妹 - 紫微語音室", layout="centered", page_icon="🔮")
 
-# ⚠️ CSS 終極修復：維持之前的完美暗黑主題
+# ⚠️ CSS 修正：保留暗黑主題，但將日曆改為「白底紫字 + 黃色選取」
 st.markdown("""
 <style>
     /* ================= 全域設定 ================= */
@@ -50,30 +48,45 @@ st.markdown("""
         border: 1px solid #d4af37 !important;
     }
 
-    /* ================= 日曆 (Calendar) ================= */
+    /* ================= 日曆 (Calendar) 白底紫字版 ================= */
+    
+    /* 1. 外層容器與彈出視窗：純白底、金邊 */
     div[data-baseweb="popover"], div[data-baseweb="calendar"] {
-        background-color: #1a0b2e !important;
+        background-color: #ffffff !important;
         border: 1px solid #d4af37 !important;
     }
+
+    /* 2. 強制日曆內的所有文字變「深紫色」 */
     div[data-baseweb="calendar"] * {
-        background-color: #1a0b2e !important; 
-        color: #f0e6d2 !important;
+        color: #1a0b2e !important; 
+        background-color: transparent !important; /* 預設背景透明 */
     }
+
+    /* 3. 日期按鈕：滑鼠移過 (Hover) 變淺紫色 */
     div[data-baseweb="calendar"] button:hover {
-        background-color: #4a148c !important;
+        background-color: #f3e5f5 !important; /* 淺紫 */
         border-radius: 50%;
     }
     div[data-baseweb="calendar"] button:hover div {
-        background-color: #4a148c !important;
+        background-color: #f3e5f5 !important;
     }
-    div[data-baseweb="calendar"] button[aria-selected="true"],
+
+    /* 4. 【關鍵設定】被選中的日期：黃底紫字 */
+    div[data-baseweb="calendar"] button[aria-selected="true"] {
+        background-color: #ffd700 !important; /* 亮金黃 */
+        border-radius: 50%;
+    }
+    
+    /* 修正選中按鈕內部的 div 也要變黃 */
     div[data-baseweb="calendar"] button[aria-selected="true"] div {
-        background-color: #b71c1c !important;
-        color: #ffffff !important;
+        background-color: #ffd700 !important;
+        color: #1a0b2e !important; /* 深紫字 */
+        font-weight: bold !important;
     }
+    
+    /* 5. 左右切換箭頭：改為深紫色 (不然白底會看不到) */
     div[data-baseweb="calendar"] svg {
-        fill: #ffd700 !important;
-        background-color: transparent !important;
+        fill: #1a0b2e !important;
     }
     
     /* ================= 其他元件 ================= */
@@ -365,21 +378,16 @@ def page_final_blessing():
     )
 
     # -----------------------------------------------------------
-    # 🔥 修正重點：改用 HTML Audio 標籤播放 (避開 st.audio 不支援 key 的問題)
+    # 🔥 修正重點：改用 HTML Audio 標籤播放
     # -----------------------------------------------------------
     if st.session_state.muyu_hit:
         try:
-            # 1. 讀取音檔並轉成 base64 (網頁只能讀字串)
             audio_file = open("assets/muyu.mp3", "rb")
             audio_bytes = audio_file.read()
             audio_b64 = base64.b64encode(audio_bytes).decode()
             
-            # 2. 生成一個隨機 ID，強迫瀏覽器認為這是新的音效 (解決連點不播放問題)
             sound_id = f"muyu_sound_{uuid.uuid4()}"
             
-            # 3. 寫入一段隱藏的 HTML 來播放
-            # display:none -> 隱藏播放器
-            # autoplay -> 自動播放
             st.markdown(
                 f"""
                 <audio autoplay="true" style="display:none;" id="{sound_id}">
