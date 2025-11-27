@@ -320,7 +320,6 @@ def page_final_blessing():
         st.session_state.gongde = 0
         st.session_state.muyu_hit = False
 
-    # 初始化功德 & 木魚狀態
     if "gongde" not in st.session_state:
         st.session_state.gongde = 0
     if "muyu_hit" not in st.session_state:
@@ -328,7 +327,7 @@ def page_final_blessing():
 
     st.markdown("<h1 style='text-align:center;'>🪵 紫微木魚功德頁</h1>", unsafe_allow_html=True)
 
-    # --- CSS：木魚圖片 + 點一下彈一下 ---
+    # --- CSS：木魚動畫 ---
     st.markdown(
         """
         <style>
@@ -338,14 +337,15 @@ def page_final_blessing():
         }
         .muyu-img {
             width: 320px;
-            transition: transform 120ms ease-out;
+            transition: transform 100ms ease-out;
+            cursor: pointer;
         }
         .muyu-hit {
-            animation: muyu-bonk 0.15s ease-out;
+            animation: muyu-bonk 0.1s ease-out;
         }
         @keyframes muyu-bonk {
             0%   { transform: scale(1); }
-            50%  { transform: scale(0.85); }
+            50%  { transform: scale(0.9); }
             100% { transform: scale(1); }
         }
         </style>
@@ -353,10 +353,8 @@ def page_final_blessing():
         unsafe_allow_html=True
     )
 
-    # 這一輪要不要套用「被敲過」的 class
     img_class = "muyu-img muyu-hit" if st.session_state.muyu_hit else "muyu-img"
 
-    # 顯示木魚圖
     st.markdown(
         f"""
         <div class="muyu-wrap">
@@ -366,19 +364,45 @@ def page_final_blessing():
         unsafe_allow_html=True
     )
 
-    # 按鈕：敲木魚（下面就好，簡單穩定）
+    # -----------------------------------------------------------
+    # 🔥 修正重點：改用 HTML Audio 標籤播放 (避開 st.audio 不支援 key 的問題)
+    # -----------------------------------------------------------
+    if st.session_state.muyu_hit:
+        try:
+            # 1. 讀取音檔並轉成 base64 (網頁只能讀字串)
+            audio_file = open("assets/muyu.mp3", "rb")
+            audio_bytes = audio_file.read()
+            audio_b64 = base64.b64encode(audio_bytes).decode()
+            
+            # 2. 生成一個隨機 ID，強迫瀏覽器認為這是新的音效 (解決連點不播放問題)
+            sound_id = f"muyu_sound_{uuid.uuid4()}"
+            
+            # 3. 寫入一段隱藏的 HTML 來播放
+            # display:none -> 隱藏播放器
+            # autoplay -> 自動播放
+            st.markdown(
+                f"""
+                <audio autoplay="true" style="display:none;" id="{sound_id}">
+                    <source src="data:audio/mp3;base64,{audio_b64}" type="audio/mp3">
+                </audio>
+                """,
+                unsafe_allow_html=True
+            )
+        except FileNotFoundError:
+            st.warning("⚠️ 找不到音效檔 assets/muyu.mp3")
+    # -----------------------------------------------------------
+
+    # 按鈕
     if st.button("🪵 敲一下木魚", use_container_width=True):
         st.session_state.gongde += 1
-        st.session_state.muyu_hit = True   # 這一輪加上動畫
+        st.session_state.muyu_hit = True
         st.rerun()
 
-    # 顯示功德
     st.markdown(
         f"<h2 style='text-align:center; margin-top:10px;'>累積功德：{st.session_state.gongde}</h2>",
         unsafe_allow_html=True
     )
 
-    # 下一輪不要再重複動畫
     st.session_state.muyu_hit = False
 
     if st.button("⬅️ 回首頁"):
