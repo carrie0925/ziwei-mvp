@@ -6,6 +6,14 @@ from dotenv import load_dotenv
 from logic import ZiweiBrain, render_ziwei_chart_grid
 from tts import get_audio_filepath
 from ziweicore import calculate_ziwei_chart
+import time
+from pathlib import Path
+import base64
+import uuid
+from streamlit.components.v1 import html
+
+
+
 # 0. 載入環境變數
 load_dotenv()
 
@@ -42,7 +50,7 @@ st.markdown("""
         border: 1px solid #d4af37 !important;
     }
 
-    /* ================= 日曆 (Calendar) 萬用字元修復 ================= */
+    /* ================= 日曆 (Calendar) ================= */
     div[data-baseweb="popover"], div[data-baseweb="calendar"] {
         background-color: #1a0b2e !important;
         border: 1px solid #d4af37 !important;
@@ -58,9 +66,7 @@ st.markdown("""
     div[data-baseweb="calendar"] button:hover div {
         background-color: #4a148c !important;
     }
-    div[data-baseweb="calendar"] button[aria-selected="true"] {
-        background-color: #b71c1c !important;
-    }
+    div[data-baseweb="calendar"] button[aria-selected="true"],
     div[data-baseweb="calendar"] button[aria-selected="true"] div {
         background-color: #b71c1c !important;
         color: #ffffff !important;
@@ -88,6 +94,7 @@ st.markdown("""
         color: #ffffff !important;
     }
 
+    /* ================= 按鈕 ================= */
     .stButton button {
         background: linear-gradient(to bottom, #7b1fa2, #4a148c) !important;
         color: #ffd700 !important;
@@ -102,34 +109,53 @@ st.markdown("""
     }
     div[data-testid="stForm"] button p { color: #ffd700 !important; }
 
+    /* ================= 側邊欄 ================= */
     section[data-testid="stSidebar"] {
         background-color: #1a0b2e !important;
         border-right: 1px solid #d4af37;
     }
+
+    /* ================= Chat Message 氣泡 ================= */
     .stChatMessage {
-        background-color: rgba(255, 255, 255, 0.1) !important;
+        background-color: rgba(255, 255, 255, 0.15) !important;
         border: 1px solid #5a3e7a;
         border-radius: 15px;
     }
 
+    /* ====== ❗ 讓聊天字變淺色（關鍵修正） ====== */
+    .stChatMessage p,
+    .stChatMessage span,
+    .stChatMessage div,
+    .stChatMessage .stMarkdown,
+    .stChatMessage pre {
+        color: #f8f3e6 !important; /* 奶油白 */
+    }
+
+    /* 使用者訊息（User bubble） */
+    .stChatMessage[data-testid="stChatMessageUser"] p {
+        color: #ffffff !important;
+    }
+
+    /* ================= 隱藏 Streamlit logo ================= */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
+
 # --- 2. API Key 與大腦初始化 (純 .env 模式) ---
-openai_key = os.getenv("OPENAI_API_KEY")
+groq_key = os.getenv("GROQ_API_KEY")
 eleven_key = os.getenv("ELEVENLABS_API_KEY")
 
 with st.sidebar:
     st.header("⚙️ 靈力設定")
     
     # 這裡改成純顯示狀態，不再提供輸入框
-    if openai_key and eleven_key:
+    if groq_key and eleven_key:
         st.success("✅ 系統靈力充沛 (已連線)")
     else:
         st.error("❌ 靈力不足！")
-        if not openai_key:
+        if not groq_key:
             st.warning("⚠️ 缺 OpenAI Key\n請檢查 .env 檔案")
         if not eleven_key:
             st.warning("⚠️ 缺 語音 Key\n請檢查 .env 檔案")
@@ -137,7 +163,7 @@ with st.sidebar:
     st.markdown("---")
     st.info("⚠️ **期末作業聲明**：\n語音採樣自網紅「阿翰po影片」角色廖麗芳，僅供學術展示。")
 
-engine = ZiweiBrain(api_key=openai_key) if openai_key else None
+engine = ZiweiBrain(api_key=groq_key) if groq_key else None
 
 # --- 3. 狀態管理 ---
 if 'step' not in st.session_state: st.session_state.step = 1
@@ -193,18 +219,13 @@ def page_user_input():
 
 def page_chart_display():
     st.markdown("## 🔮 您的紫微命盤")
-
-    if "ziwei_chart" not in st.session_state:
-        st.session_state.ziwei_chart = calculate_ziwei_chart(
-            st.session_state.user_data["datetime"],
-            st.session_state.user_data["gender"]
-        )
+    st.session_state.ziwei_chart = calculate_ziwei_chart(
+        st.session_state.user_data["datetime"],
+        st.session_state.user_data["gender"]
+    )
 
     # 🟣 九宮格 UI
     render_ziwei_chart_grid(st.session_state.ziwei_chart)
-
-    st.markdown("---")
-    st.markdown("### 想聽阿姨解命嗎？")
 
         # 上一頁（回到 step 1）
     if st.button("⬅️ 返回輸入頁"):
@@ -284,22 +305,111 @@ def page_chat_room():
         st.session_state.step = 2
         st.rerun()
 
+    if st.button("🪵 我要去敲木魚結緣"):
+        st.session_state.step = 5
+        st.rerun()
+
+# --- 載入圖片 ---
+def load_image_base64(path):
+    return base64.b64encode(Path(path).read_bytes()).decode()
+
+muyu_base64 = load_image_base64("assets/wood_fish.png")
+
+def page_final_blessing():
+    if st.session_state.previous_step != 5:
+        st.session_state.gongde = 0
+        st.session_state.muyu_hit = False
+
+    # 初始化功德 & 木魚狀態
+    if "gongde" not in st.session_state:
+        st.session_state.gongde = 0
+    if "muyu_hit" not in st.session_state:
+        st.session_state.muyu_hit = False
+
+    st.markdown("<h1 style='text-align:center;'>🪵 紫微木魚功德頁</h1>", unsafe_allow_html=True)
+
+    # --- CSS：木魚圖片 + 點一下彈一下 ---
+    st.markdown(
+        """
+        <style>
+        .muyu-wrap {
+            text-align: center;
+            margin-top: 10px;
+        }
+        .muyu-img {
+            width: 320px;
+            transition: transform 120ms ease-out;
+        }
+        .muyu-hit {
+            animation: muyu-bonk 0.15s ease-out;
+        }
+        @keyframes muyu-bonk {
+            0%   { transform: scale(1); }
+            50%  { transform: scale(0.85); }
+            100% { transform: scale(1); }
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # 這一輪要不要套用「被敲過」的 class
+    img_class = "muyu-img muyu-hit" if st.session_state.muyu_hit else "muyu-img"
+
+    # 顯示木魚圖
+    st.markdown(
+        f"""
+        <div class="muyu-wrap">
+            <img class="{img_class}" src="data:image/png;base64,{muyu_base64}">
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # 按鈕：敲木魚（下面就好，簡單穩定）
+    if st.button("🪵 敲一下木魚", use_container_width=True):
+        st.session_state.gongde += 1
+        st.session_state.muyu_hit = True   # 這一輪加上動畫
+        st.rerun()
+
+    # 顯示功德
+    st.markdown(
+        f"<h2 style='text-align:center; margin-top:10px;'>累積功德：{st.session_state.gongde}</h2>",
+        unsafe_allow_html=True
+    )
+
+    # 下一輪不要再重複動畫
+    st.session_state.muyu_hit = False
+
+    if st.button("⬅️ 回首頁"):
+        st.session_state.step = 1
+        st.rerun()
+
 def main():
-    if st.session_state.step == 1:
+    if "previous_step" not in st.session_state:
+        st.session_state.previous_step = None
+
+    current_step = st.session_state.step
+
+    if current_step == 1:
         page_user_input()
-    elif st.session_state.step == 4:
+    elif current_step == 4:
         page_chart_display()
-    elif st.session_state.step == 2:
+    elif current_step == 2:
         page_theme_selection()
-    elif st.session_state.step == 3:
+    elif current_step == 3:
         page_chat_room()
-        st.sidebar.markdown("---")
-        if st.sidebar.button("🔄 重新算別的"):
-            st.session_state.step = 1
-            st.session_state.chat_history = []
-            st.session_state.last_audio = None
-            st.session_state.input_key += 1
-            st.rerun()
+    elif current_step == 5:
+        page_final_blessing()
+    st.sidebar.markdown("---")
+    if st.sidebar.button("🔄 重新算別的"):
+        st.session_state.step = 1
+        st.session_state.chat_history = []
+        st.session_state.last_audio = None
+        st.session_state.input_key += 1
+        st.rerun()
+    st.session_state.previous_step = current_step
+
 
 if __name__ == "__main__":
     main()

@@ -89,7 +89,7 @@ class ZiweiBrain:
     def __init__(self, api_key=None):
         self.api_key = api_key
         if self.api_key:
-            self.client = OpenAI(api_key=self.api_key)
+            self.client = Groq(api_key=self.api_key)
         else:
             self.client = None
 
@@ -162,7 +162,7 @@ class ZiweiBrain:
         # 4. 呼叫 GPT
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="openai/gpt-oss-120b",
                 messages=messages,
                 temperature=0.7 # 稍微降低一點溫度，讓邏輯更穩定，但語氣保留
             )
