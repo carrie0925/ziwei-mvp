@@ -18,29 +18,64 @@ load_dotenv()
 # --- 1. 設定頁面 ---
 st.set_page_config(page_title="九天玄女指定姐妹 - 紫微語音室", layout="centered", page_icon="🔮")
 
-# ⚠️ CSS 修正：保留暗黑主題，但將日曆改為「白底紫字 + 黃色選取」
+# ⚠️ CSS 修正：解決九宮格文字看不見的問題
 st.markdown("""
 <style>
-    /* ================= 全域設定 ================= */
+    /* ================= 1. 全域設定 ================= */
     .stApp {
         background: linear-gradient(180deg, #1a0b2e 0%, #2d1b4e 100%);
     }
-    h1, h2, h3, h4, h5, h6, p, label {
+    
+    /* 🔥【關鍵修改】移除了 'div' 和 'span' 的強制變色 */
+    /* 只強制標題、段落、標籤變色，保留 div 的彈性 */
+    h1, h2, h3, h4, h5, h6, p, label, li {
         font-family: 'Noto Serif TC', 'Songti TC', serif !important;
         color: #f0e6d2 !important;
     }
+    
+    /* 標題特效 */
     h1 {
         color: #ffd700 !important;
         text-shadow: 0px 0px 15px rgba(255, 215, 0, 0.6);
         text-align: center;
         font-weight: 800 !important;
+        margin-bottom: 0.2rem !important;
+    }
+    
+    /* 頂部 Header 黑化隱藏 */
+    header[data-testid="stHeader"] {
+        background-color: transparent !important;
+    }
+    div[data-testid="stDecoration"] {
+        visibility: hidden;
+    }
+    
+    /* 調整頂部間距 */
+    .block-container {
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
     }
 
-    /* ================= 輸入框優化 ================= */
+    /* ================= 2. 🔥 九宮格命盤專屬修正 🔥 ================= */
+    /* 針對 st.container(border=True) 的內部 */
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        background-color: transparent !important;
+        border: none !important; /* 隱藏外框線，只留九宮格 */
+    }
+
+    /* 強制九宮格容器內的所有文字變成【純黑色】 */
+    div[data-testid="stVerticalBlockBorderWrapper"] * {
+        color: #000000 !important;
+        text-shadow: none !important;
+        font-weight: bold !important;
+    }
+
+    /* ================= 3. 輸入框優化 ================= */
     .stTextInput label, .stSelectbox label, .stDateInput label, .stTimeInput label {
         color: #ffd700 !important;
         font-size: 1.1rem !important;
         font-weight: bold !important;
+        margin-bottom: 0px !important;
     }
     .stTextInput input, .stDateInput input, .stTimeInput input {
         background-color: rgba(0, 0, 0, 0.5) !important;
@@ -48,48 +83,34 @@ st.markdown("""
         border: 1px solid #d4af37 !important;
     }
 
-    /* ================= 日曆 (Calendar) 白底紫字版 ================= */
-    
-    /* 1. 外層容器與彈出視窗：純白底、金邊 */
+    /* ================= 4. 日曆 (白底紫字) ================= */
     div[data-baseweb="popover"], div[data-baseweb="calendar"] {
         background-color: #ffffff !important;
         border: 1px solid #d4af37 !important;
     }
-
-    /* 2. 強制日曆內的所有文字變「深紫色」 */
+    /* 確保日曆內的字是深色的 */
     div[data-baseweb="calendar"] * {
         color: #1a0b2e !important; 
-        background-color: transparent !important; /* 預設背景透明 */
+        background-color: transparent !important;
     }
-
-    /* 3. 日期按鈕：滑鼠移過 (Hover) 變淺紫色 */
     div[data-baseweb="calendar"] button:hover {
-        background-color: #f3e5f5 !important; /* 淺紫 */
-        border-radius: 50%;
-    }
-    div[data-baseweb="calendar"] button:hover div {
         background-color: #f3e5f5 !important;
-    }
-
-    /* 4. 【關鍵設定】被選中的日期：黃底紫字 */
-    div[data-baseweb="calendar"] button[aria-selected="true"] {
-        background-color: #ffd700 !important; /* 亮金黃 */
         border-radius: 50%;
     }
-    
-    /* 修正選中按鈕內部的 div 也要變黃 */
+    div[data-baseweb="calendar"] button[aria-selected="true"] {
+        background-color: #ffd700 !important;
+        border-radius: 50%;
+    }
     div[data-baseweb="calendar"] button[aria-selected="true"] div {
         background-color: #ffd700 !important;
-        color: #1a0b2e !important; /* 深紫字 */
-        font-weight: bold !important;
+        color: #1a0b2e !important;
     }
-    
-    /* 5. 左右切換箭頭：改為深紫色 (不然白底會看不到) */
     div[data-baseweb="calendar"] svg {
         fill: #1a0b2e !important;
     }
     
-    /* ================= 其他元件 ================= */
+    /* ================= 5. 其他元件 ================= */
+    /* 下拉選單 */
     div[data-baseweb="select"] > div {
         background-color: rgba(0, 0, 0, 0.5) !important;
         border: 1px solid #d4af37 !important;
@@ -107,13 +128,14 @@ st.markdown("""
         color: #ffffff !important;
     }
 
-    /* ================= 按鈕 ================= */
+    /* 按鈕 */
     .stButton button {
         background: linear-gradient(to bottom, #7b1fa2, #4a148c) !important;
         color: #ffd700 !important;
         border: 2px solid #d4af37 !important;
         border-radius: 12px !important;
         font-size: 18px !important;
+        margin-top: 10px;
     }
     .stButton button:hover {
         background: linear-gradient(to bottom, #9c27b0, #7b1fa2) !important;
@@ -122,34 +144,25 @@ st.markdown("""
     }
     div[data-testid="stForm"] button p { color: #ffd700 !important; }
 
-    /* ================= 側邊欄 ================= */
+    /* 側邊欄 */
     section[data-testid="stSidebar"] {
         background-color: #1a0b2e !important;
         border-right: 1px solid #d4af37;
     }
-
-    /* ================= Chat Message 氣泡 ================= */
+    
+    /* 聊天氣泡 */
     .stChatMessage {
         background-color: rgba(255, 255, 255, 0.15) !important;
         border: 1px solid #5a3e7a;
         border-radius: 15px;
     }
-
-    /* ====== ❗ 讓聊天字變淺色（關鍵修正） ====== */
-    .stChatMessage p,
-    .stChatMessage span,
-    .stChatMessage div,
-    .stChatMessage .stMarkdown,
-    .stChatMessage pre {
-        color: #f8f3e6 !important; /* 奶油白 */
+    .stChatMessage p, .stChatMessage span, .stChatMessage div, .stChatMessage .stMarkdown, .stChatMessage pre {
+        color: #f8f3e6 !important;
     }
-
-    /* 使用者訊息（User bubble） */
     .stChatMessage[data-testid="stChatMessageUser"] p {
         color: #ffffff !important;
     }
 
-    /* ================= 隱藏 Streamlit logo ================= */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
 </style>
@@ -162,8 +175,6 @@ eleven_key = os.getenv("ELEVENLABS_API_KEY")
 
 with st.sidebar:
     st.header("⚙️ 靈力設定")
-    
-    # 這裡改成純顯示狀態，不再提供輸入框
     if groq_key and eleven_key:
         st.success("✅ 系統靈力充沛 (已連線)")
     else:
@@ -203,10 +214,23 @@ def transcribe_audio(audio_file_obj):
 def page_user_input():
     st.markdown("<h1 style='font-size: 3.5rem;'>🔯 紫微天機閣 🔯</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: #d4af37; font-size: 1.2rem;'>九天玄女指定姐妹 • 廖麗芳 親算</p>", unsafe_allow_html=True)
-    st.markdown("---")
     
+    try:
+        opening_bytes = Path("assets/opening.webp").read_bytes()
+        opening_b64 = base64.b64encode(opening_bytes).decode()
+        st.markdown(
+            f"""
+            <div style="display: flex; justify-content: center; margin-top: 0px; margin-bottom: 20px;">
+                <img src="data:image/webp;base64,{opening_b64}" alt="opening" style="width: 250px; max-width: 80%; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    except FileNotFoundError:
+        pass
+
     with st.container():
-        st.markdown("### 📝 請填寫生辰八字")
+        st.markdown("<h3 style='margin-top: 0px; margin-bottom: 15px; text-align: center;'>📝 請填寫生辰八字</h3>", unsafe_allow_html=True)
         with st.form("profile_form"):
             col1, col2 = st.columns(2)
             with col1:
@@ -237,10 +261,13 @@ def page_chart_display():
         st.session_state.user_data["gender"]
     )
 
-    # 🟣 九宮格 UI
-    render_ziwei_chart_grid(st.session_state.ziwei_chart)
+    # 🔥 這裡用了 st.container(border=True) 
+    # CSS 會抓到這個容器，並強制把裡面的字變黑
+    with st.container(border=True):
+        render_ziwei_chart_grid(st.session_state.ziwei_chart)
 
-        # 上一頁（回到 step 1）
+    st.markdown("<br>", unsafe_allow_html=True)
+
     if st.button("⬅️ 返回輸入頁"):
         st.session_state.step = 1
         st.rerun()
@@ -268,7 +295,6 @@ def page_theme_selection():
                 st.session_state.last_audio = audio_path
             st.session_state.step = 3
             st.rerun()
-        # 上一頁（回到 step 1）
     if st.button("⬅️ 返回命盤"):
         st.session_state.step = 4
         st.rerun()
@@ -276,7 +302,6 @@ def page_theme_selection():
 def page_chat_room():
     st.markdown("<h1>🎙️ 廖麗芳紫微語音室</h1>", unsafe_allow_html=True)
     
-    # 檢查 API Key 是否存在，若不存在顯示錯誤並停止
     if not engine:
         st.error("⚠️ 系統偵測不到 API Key！請確認您的 .env 檔案是否設定正確。")
         return
@@ -324,7 +349,10 @@ def page_chat_room():
 
 # --- 載入圖片 ---
 def load_image_base64(path):
-    return base64.b64encode(Path(path).read_bytes()).decode()
+    try:
+        return base64.b64encode(Path(path).read_bytes()).decode()
+    except FileNotFoundError:
+        return ""
 
 muyu_base64 = load_image_base64("assets/wood_fish.png")
 
@@ -344,73 +372,37 @@ def page_final_blessing():
     st.markdown(
         """
         <style>
-        .muyu-wrap {
-            text-align: center;
-            margin-top: 10px;
-        }
-        .muyu-img {
-            width: 320px;
-            transition: transform 100ms ease-out;
-            cursor: pointer;
-        }
-        .muyu-hit {
-            animation: muyu-bonk 0.1s ease-out;
-        }
-        @keyframes muyu-bonk {
-            0%   { transform: scale(1); }
-            50%  { transform: scale(0.9); }
-            100% { transform: scale(1); }
-        }
+        .muyu-wrap { text-align: center; margin-top: 10px; }
+        .muyu-img { width: 320px; transition: transform 100ms ease-out; cursor: pointer; }
+        .muyu-hit { animation: muyu-bonk 0.1s ease-out; }
+        @keyframes muyu-bonk { 0% { transform: scale(1); } 50% { transform: scale(0.9); } 100% { transform: scale(1); } }
         </style>
-        """,
-        unsafe_allow_html=True
+        """, unsafe_allow_html=True
     )
 
     img_class = "muyu-img muyu-hit" if st.session_state.muyu_hit else "muyu-img"
 
-    st.markdown(
-        f"""
-        <div class="muyu-wrap">
-            <img class="{img_class}" src="data:image/png;base64,{muyu_base64}">
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    if muyu_base64:
+        st.markdown(f'<div class="muyu-wrap"><img class="{img_class}" src="data:image/png;base64,{muyu_base64}"></div>', unsafe_allow_html=True)
+    else:
+        st.error("⚠️ 找不到木魚圖片 assets/wood_fish.png")
 
-    # -----------------------------------------------------------
-    # 🔥 修正重點：改用 HTML Audio 標籤播放
-    # -----------------------------------------------------------
     if st.session_state.muyu_hit:
         try:
             audio_file = open("assets/muyu.mp3", "rb")
             audio_bytes = audio_file.read()
             audio_b64 = base64.b64encode(audio_bytes).decode()
-            
             sound_id = f"muyu_sound_{uuid.uuid4()}"
-            
-            st.markdown(
-                f"""
-                <audio autoplay="true" style="display:none;" id="{sound_id}">
-                    <source src="data:audio/mp3;base64,{audio_b64}" type="audio/mp3">
-                </audio>
-                """,
-                unsafe_allow_html=True
-            )
+            st.markdown(f'<audio autoplay="true" style="display:none;" id="{sound_id}"><source src="data:audio/mp3;base64,{audio_b64}" type="audio/mp3"></audio>', unsafe_allow_html=True)
         except FileNotFoundError:
             st.warning("⚠️ 找不到音效檔 assets/muyu.mp3")
-    # -----------------------------------------------------------
 
-    # 按鈕
     if st.button("🪵 敲一下木魚", use_container_width=True):
         st.session_state.gongde += 1
         st.session_state.muyu_hit = True
         st.rerun()
 
-    st.markdown(
-        f"<h2 style='text-align:center; margin-top:10px;'>累積功德：{st.session_state.gongde}</h2>",
-        unsafe_allow_html=True
-    )
-
+    st.markdown(f"<h2 style='text-align:center; margin-top:10px;'>累積功德：{st.session_state.gongde}</h2>", unsafe_allow_html=True)
     st.session_state.muyu_hit = False
 
     if st.button("⬅️ 回首頁"):
@@ -441,7 +433,6 @@ def main():
         st.session_state.input_key += 1
         st.rerun()
     st.session_state.previous_step = current_step
-
 
 if __name__ == "__main__":
     main()
