@@ -6,4 +6,5 @@ SpeechRecognition
 openai
 elevenlabs
 watchdog
-grop
+groq
+dotenv
