@@ -53,7 +53,7 @@ pip install -r requirements.txt
 由於資安考量，API Key 不會包含在程式碼中。 請在專案根目錄下建立一個名為 .env 的檔案，並填入以下資訊:
 ```bash
 # .env 檔案內容範例
-OPENAI_API_KEY=sk-proj-xxxxxxxxxxxxxxxxxxxxxxxx
+GROQ_API_KEY=gsk-xxxxxxxxxxxxxxxxxxxxxxxx
 ELEVENLABS_API_KEY=sk_xxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
